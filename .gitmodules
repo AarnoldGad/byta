@@ -1,0 +1,3 @@
+[submodule "deps/Nail"]
+	path = deps/Nail
+	url = https://github.com/AarnoldGad/Nail
