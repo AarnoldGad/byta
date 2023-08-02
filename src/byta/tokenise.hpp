@@ -13,12 +13,14 @@ namespace byta
     enum token_type : uint8_t
     {
         BEGIN             = NAIL_BIT(0),
-        END               = NAIL_BIT(1),
-        BINARY_OPERATOR   = NAIL_BIT(2),
-        UNARY_OPERATOR    = NAIL_BIT(3),
-        OPERAND           = NAIL_BIT(4),
-        OPEN_PARENTHESES  = NAIL_BIT(5),
-        CLOSE_PARENTHESES = NAIL_BIT(6),
+
+        OPERAND           = NAIL_BIT(1),
+        UNARY_OPERATOR    = NAIL_BIT(2),
+        BINARY_OPERATOR   = NAIL_BIT(3),
+        OPEN_PARENTHESES  = NAIL_BIT(4),
+        CLOSE_PARENTHESES = NAIL_BIT(5),
+
+        END               = NAIL_BIT(7),
 
         OPERATOR          = (BINARY_OPERATOR | UNARY_OPERATOR),
         PARENTHESES       = (OPEN_PARENTHESES | CLOSE_PARENTHESES),
@@ -35,6 +37,7 @@ namespace byta
     std::vector<token_t> tokenise(expression_t const& expr);
 
     std::string::const_iterator seek_next_token(expression_t const& expr, std::string::const_iterator it);
+    token_type detect_token_type(std::string_view token, token_type preceding_token_type);
 }
 /**
  * Copyright (C) 2023 Gaétan Jalin

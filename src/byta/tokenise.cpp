@@ -9,8 +9,6 @@
 // TODO: implement ** and Ex (=10^x) operators
 namespace
 {
-    void parse_expression(std::string_view expr, std::vector<byta::token_t>& tokens);
-
     bool is_operator_char(char const c)
     {
         return (c == '+' ||
@@ -40,25 +38,9 @@ namespace
     {
         using std::operator""sv;
         return (preceding_token_type == byta::token_type::BEGIN ||
-                preceding_token_type == byta::token_type::BINARY_OPERATOR ||
-                preceding_token_type == byta::token_type::UNARY_OPERATOR) &&
+                (preceding_token_type & byta::token_type::PARENTHESES) ||
+                (preceding_token_type & byta::token_type::OPERATOR)) &&
                token == "-"sv;
-    }
-
-    byta::token_type detect_token_type(std::string_view token, byta::token_type const preceding_token_type)
-    {
-        using std::operator""sv;
-
-        if (is_unary_op(token, preceding_token_type))
-            return byta::token_type::UNARY_OPERATOR;
-        else if (is_binary_op(token, preceding_token_type))
-            return byta::token_type::BINARY_OPERATOR;
-        else if (token == "("sv)
-            return byta::token_type::OPEN_PARENTHESES;
-        else if (token == ")"sv)
-            return byta::token_type::CLOSE_PARENTHESES;
-        else
-            return byta::token_type::OPERAND;
     }
 }
 
@@ -74,8 +56,8 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
 
     while(it != expr->end())
     {
-        std::string::const_iterator next_it = seek_next_token(it, expr->end());
-        std::string_view token(it, std::distance(it, next_it));
+        std::string::const_iterator next_it = seek_next_token(expr, it);
+        std::string_view token(&(*it), std::distance(it, next_it));
         byta::token_type type = detect_token_type(token, last_token_type);
 
         tokens.push_back({.type = type, .str = token});
@@ -89,10 +71,10 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
     return tokens;
 }
 
-std::string::const_iterator seek_next_token(std::string::const_iterator it, std::string::const_iterator end)
+std::string::const_iterator byta::seek_next_token(byta::expression_t const& expr, std::string::const_iterator const it)
 {
     size_t offset = 0;
-    while ((it + offset) != end)
+    while ((it + offset) != expr->end())
     {
         char c = *(it + offset);
         if (is_operator_char(c) || is_parentheses(c))
@@ -105,7 +87,23 @@ std::string::const_iterator seek_next_token(std::string::const_iterator it, std:
         }
     }
 
-    return end;
+    return expr->end();
+}
+
+byta::token_type byta::detect_token_type(std::string_view const token, byta::token_type const preceding_token_type)
+{
+    using std::operator""sv;
+
+    if (is_unary_op(token, preceding_token_type))
+        return byta::token_type::UNARY_OPERATOR;
+    else if (is_binary_op(token, preceding_token_type))
+        return byta::token_type::BINARY_OPERATOR;
+    else if (token == "("sv)
+        return byta::token_type::OPEN_PARENTHESES;
+    else if (token == ")"sv)
+        return byta::token_type::CLOSE_PARENTHESES;
+    else
+        return byta::token_type::OPERAND;
 }
 /**
  * Copyright (C) 2023 Gaétan Jalin
