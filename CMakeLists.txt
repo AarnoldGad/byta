@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.20 FATAL_ERROR)
 
 # Read version numbers and stage from version.hpp
-FILE(READ src/version.hpp BYTA_VERSION_FILE)
+FILE(READ src/byta/version.hpp BYTA_VERSION_FILE)
 STRING(REGEX MATCH "#define[ ]+BYTA_VERSION_MAJOR[ ]+([0-9]+)" _ ${BYTA_VERSION_FILE})
 SET(BYTA_VERSION_MAJOR "${CMAKE_MATCH_1}")
 STRING(REGEX MATCH "#define[ ]+BYTA_VERSION_MINOR[ ]+([0-9]+)" _ ${BYTA_VERSION_FILE})
@@ -54,7 +54,9 @@ TARGET_INCLUDE_DIRECTORIES(byta SYSTEM PRIVATE
     $<$<PLATFORM_ID:Linux,Darwin>:/usr/local/include>)
 
 TARGET_SOURCES(byta PRIVATE
-    ${SRC_DIR}/main.cpp)
+    ${SRC_DIR}/byta/tokenise.cpp
+
+    ${SRC_DIR}/byta/main.cpp)
 
 TARGET_LINK_DIRECTORIES(byta PRIVATE
     $<$<PLATFORM_ID:Linux,Darwin>:/usr/lib>
