@@ -35,9 +35,6 @@ namespace byta
 
     [[nodiscard]]
     std::vector<token_t> tokenise(expression_t const& expr);
-
-    std::string::const_iterator seek_next_token(expression_t const& expr, std::string::const_iterator it);
-    token_type detect_token_type(std::string_view token, token_type preceding_token_type);
 }
 /**
  * Copyright (C) 2023 Gaétan Jalin

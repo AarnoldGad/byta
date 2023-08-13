@@ -42,6 +42,131 @@ namespace
                 (preceding_token_type & byta::token_type::OPERATOR)) &&
                token == "-"sv;
     }
+
+    std::string::const_iterator seek_next_token(byta::expression_t const& expr, std::string::const_iterator const it)
+    {
+        NAIL_DEBUG_ASSERT(it < expr->end(), "Past-the-end input iterator!");
+        for (size_t offset = 0; (it + offset) != expr->end(); ++offset)
+        {
+            char c = *(it + offset);
+            if (is_operator_char(c) || is_parentheses(c))
+                return it + (offset ? offset : 1);
+        }
+
+        return expr->end();
+    }
+
+    byta::token_type detect_token_type(std::string_view const token, byta::token_type const preceding_token_type)
+    {
+        using std::operator""sv;
+
+        if (is_unary_op(token, preceding_token_type))
+            return byta::token_type::UNARY_OPERATOR;
+        else if (is_binary_op(token, preceding_token_type))
+            return byta::token_type::BINARY_OPERATOR;
+        else if (token == "("sv)
+            return byta::token_type::OPEN_PARENTHESES;
+        else if (token == ")"sv)
+            return byta::token_type::CLOSE_PARENTHESES;
+        else
+            return byta::token_type::OPERAND;
+    }
+
+    std::vector<byta::token_t> develop_operand(std::string_view const expr)
+    {
+        using std::operator""sv;
+        std::vector<byta::token_t> developed;
+
+        std::size_t offset = 0;
+        std::size_t buffer_length = 0;
+        bool real_number = false;
+        byta::token_type last_token_type = byta::token_type::BEGIN;
+
+        for (char c : expr)
+        {
+            // TODO: Parse from defined variables
+            if (std::isdigit(static_cast<unsigned char>(c)))
+            {
+                buffer_length++;
+            }
+            else if (c == '.')
+            {
+                if (!real_number && buffer_length > 0)
+                    real_number = true;
+                else
+                    throw std::runtime_error("Unexpected symbol");
+
+                buffer_length++;
+            }
+            else if (std::isalpha(static_cast<unsigned char>(c)))
+            {
+                // If was already parsing a number
+                if (buffer_length > 0)
+                {
+                    if (last_token_type == byta::token_type::OPERAND)
+                    {
+                        developed.push_back({
+                            .type = byta::token_type::BINARY_OPERATOR,
+                            .str = "*"sv
+                        });
+                    }
+
+                    std::string_view str(&(*(expr.begin() + offset)), buffer_length);
+
+                    if (str.back() == '.')
+                        throw std::runtime_error("Period followed by no digits!");
+
+                    developed.push_back({
+                        .type = byta::token_type::OPERAND,
+                        .str = str
+                    });
+
+                    last_token_type = byta::token_type::OPERAND;
+                    offset += buffer_length;
+                    buffer_length = 0;
+                    real_number = false;
+                }
+
+                if (last_token_type == byta::token_type::OPERAND)
+                {
+                    developed.push_back({
+                        .type = byta::token_type::BINARY_OPERATOR,
+                        .str = "*"sv
+                    });
+                }
+
+                developed.push_back({
+                    .type = byta::token_type::OPERAND,
+                    .str = {&(*(expr.begin() + offset)), 1}
+                });
+
+                last_token_type = byta::token_type::OPERAND;
+                offset++;
+            }
+            else
+            {
+                throw std::runtime_error(fmt::format("Unexpected symbol: {}", c));
+            }
+        }
+
+        if (buffer_length > 0)
+        {
+            if (last_token_type == byta::token_type::OPERAND)
+            {
+                developed.push_back({
+                    .type = byta::token_type::BINARY_OPERATOR,
+                    .str = "*"sv
+                });
+            }
+
+            developed.push_back({
+                .type = byta::token_type::OPERAND,
+                .str = {&(*(expr.begin() + offset)), buffer_length}
+            });
+        }
+
+        return developed;
+    }
 }
 
 [[nodiscard]]
@@ -60,7 +185,16 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
         std::string_view token(&(*it), std::distance(it, next_it));
         byta::token_type type = detect_token_type(token, last_token_type);
 
-        tokens.push_back({.type = type, .str = token});
+        if (type == byta::token_type::OPERAND)
+        {
+            std::vector<byta::token_t> developed = develop_operand(token);
+            tokens.insert(tokens.end(), developed.begin(), developed.end());
+        }
+        else
+        {
+            tokens.push_back({.type = type, .str = token});
+        }
+
 
         it = next_it;
         last_token_type = type;
@@ -69,41 +203,6 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
     // tokens.push_back({.type = byta::token_type::END, .str = {}});
 
     return tokens;
-}
-
-std::string::const_iterator byta::seek_next_token(byta::expression_t const& expr, std::string::const_iterator const it)
-{
-    size_t offset = 0;
-    while ((it + offset) != expr->end())
-    {
-        char c = *(it + offset);
-        if (is_operator_char(c) || is_parentheses(c))
-        {
-            return it + (offset ? offset : 1);
-        }
-        else
-        {
-            ++offset;
-        }
-    }
-
-    return expr->end();
-}
-
-byta::token_type byta::detect_token_type(std::string_view const token, byta::token_type const preceding_token_type)
-{
-    using std::operator""sv;
-
-    if (is_unary_op(token, preceding_token_type))
-        return byta::token_type::UNARY_OPERATOR;
-    else if (is_binary_op(token, preceding_token_type))
-        return byta::token_type::BINARY_OPERATOR;
-    else if (token == "("sv)
-        return byta::token_type::OPEN_PARENTHESES;
-    else if (token == ")"sv)
-        return byta::token_type::CLOSE_PARENTHESES;
-    else
-        return byta::token_type::OPERAND;
 }
 /**
  * Copyright (C) 2023 Gaétan Jalin
