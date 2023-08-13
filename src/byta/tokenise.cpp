@@ -151,19 +151,26 @@ namespace
         {
             auto next = std::next(it);
 
-            // Insert * between 2 consecutive operands or closing parenthesis
-            // and operand
-            if ((it->type == byta::token_type::OPERAND ||
-                 it->type == byta::token_type::CLOSE_PARENTHESIS) &&
-                (next != tokens.end() &&
+            if (next == tokens.end())
+            {
+                processed.push_back(*it);
+                continue;
+            }
+
+            // Insert * between 2 consecutive operands, closing parenthesis
+            // and operand or operand and opening parenthesis
+            if ((it->type == byta::token_type::OPERAND &&
+                 (next->type == byta::token_type::OPERAND ||
+                  next->type == byta::token_type::OPEN_PARENTHESIS)) ||
+                (it->type == byta::token_type::CLOSE_PARENTHESIS &&
                  next->type == byta::token_type::OPERAND)
-                )
+               )
             {
                 processed.push_back(*it);
                 processed.push_back({
                     .type = byta::token_type::BINARY_OPERATOR,
                     .str = "*"sv
-                        });
+                });
             }
             else
             {
