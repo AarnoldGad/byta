@@ -71,17 +71,17 @@ int main(int argc, char* argv[])
 /**
  * Copyright (C) 2023 Gaétan Jalin
  *
- * This file is part of BYTA.
+ * This file is part of B.Y.T.A.
  *
- * BYTA is free software: you can redistribute it and/or modify it under the terms of the
+ * B.Y.T.A. is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation,
  * either version 3 of the License, or (at your option) any later version.
  *
- * Foobar is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * B.Y.T.A. is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License along with BYTA.
+ * You should have received a copy of the GNU General Public License along with B.Y.T.A.
  * If not, see <https://www.gnu.org/licenses/>.
  **/
 
