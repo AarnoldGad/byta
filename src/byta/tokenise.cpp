@@ -76,21 +76,51 @@ namespace
     std::vector<byta::token_t> develop_operand(std::string_view const expr)
     {
         using std::operator""sv;
-        std::vector<byta::token_t> developed;
 
+        std::vector<byta::token_t> developed;
         std::size_t offset = 0;
         std::size_t buffer_length = 0;
         bool real_number = false;
 
+        auto is_digit = [](unsigned char const c) -> bool
+        {
+            return std::isdigit(c);
+        };
+
+        auto is_alpha = [](unsigned char const c) -> bool
+        {
+            return std::isalpha(c);
+        };
+
+        auto push_operand = [&developed](std::string_view const& token) -> void
+        {
+            developed.push_back({
+                .type = byta::token_type::OPERAND,
+                .str = token
+            });
+        };
+
+        auto push_buffered_number = [&expr, &push_operand, &offset, &buffer_length]() -> void
+        {
+            std::string_view token(&(*(expr.begin() + offset)), buffer_length);
+
+            if (token.back() == '.')
+                throw std::runtime_error("Real number with no decimals!");
+
+            push_operand(token);
+        };
+
         for (char c : expr)
         {
             // TODO: Parse from defined variables
-            if (std::isdigit(static_cast<unsigned char>(c)))
+            if (is_digit(c))
             {
+                // Continue parsing a multidigit number
                 buffer_length++;
             }
             else if (c == '.')
             {
+                // If parsing a number and first period encountered
                 if (!real_number && buffer_length > 0)
                     real_number = true;
                 else
@@ -98,30 +128,19 @@ namespace
 
                 buffer_length++;
             }
-            else if (std::isalpha(static_cast<unsigned char>(c)))
+            else if (is_alpha(c))
             {
                 // If was already parsing a number
                 if (buffer_length > 0)
                 {
-                    std::string_view str(&(*(expr.begin() + offset)), buffer_length);
-
-                    if (str.back() == '.')
-                        throw std::runtime_error("Period followed by no digits!");
-
-                    developed.push_back({
-                        .type = byta::token_type::OPERAND,
-                        .str = str
-                    });
+                    push_buffered_number();
 
                     offset += buffer_length;
                     buffer_length = 0;
                     real_number = false;
                 }
 
-                developed.push_back({
-                    .type = byta::token_type::OPERAND,
-                    .str = {&(*(expr.begin() + offset)), 1}
-                });
+                push_operand({&(*(expr.begin() + offset)), 1});
 
                 offset++;
             }
@@ -132,12 +151,7 @@ namespace
         }
 
         if (buffer_length > 0)
-        {
-            developed.push_back({
-                .type = byta::token_type::OPERAND,
-                .str = {&(*(expr.begin() + offset)), buffer_length}
-            });
-        }
+            push_buffered_number();
 
         return developed;
     }
