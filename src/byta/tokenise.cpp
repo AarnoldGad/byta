@@ -26,7 +26,8 @@ namespace
     bool is_binary_op(std::string_view const token, byta::token_type const preceding_token_type)
     {
         using std::operator""sv;
-        return (preceding_token_type == byta::token_type::OPERAND) &&
+        return (preceding_token_type == byta::token_type::OPERAND ||
+                preceding_token_type == byta::token_type::CLOSE_PARENTHESIS) &&
                (token == "+"sv ||
                 token == "-"sv ||
                 token == "*"sv ||
@@ -38,7 +39,7 @@ namespace
     {
         using std::operator""sv;
         return (preceding_token_type == byta::token_type::BEGIN ||
-                (preceding_token_type & byta::token_type::PARENTHESES) ||
+                (preceding_token_type & byta::token_type::PARENTHESIS) ||
                 (preceding_token_type & byta::token_type::OPERATOR)) &&
                token == "-"sv;
     }
@@ -65,9 +66,9 @@ namespace
         else if (is_binary_op(token, preceding_token_type))
             return byta::token_type::BINARY_OPERATOR;
         else if (token == "("sv)
-            return byta::token_type::OPEN_PARENTHESES;
+            return byta::token_type::OPEN_PARENTHESIS;
         else if (token == ")"sv)
-            return byta::token_type::CLOSE_PARENTHESES;
+            return byta::token_type::CLOSE_PARENTHESIS;
         else
             return byta::token_type::OPERAND;
     }
@@ -80,7 +81,6 @@ namespace
         std::size_t offset = 0;
         std::size_t buffer_length = 0;
         bool real_number = false;
-        byta::token_type last_token_type = byta::token_type::BEGIN;
 
         for (char c : expr)
         {
@@ -103,14 +103,6 @@ namespace
                 // If was already parsing a number
                 if (buffer_length > 0)
                 {
-                    if (last_token_type == byta::token_type::OPERAND)
-                    {
-                        developed.push_back({
-                            .type = byta::token_type::BINARY_OPERATOR,
-                            .str = "*"sv
-                        });
-                    }
-
                     std::string_view str(&(*(expr.begin() + offset)), buffer_length);
 
                     if (str.back() == '.')
@@ -121,18 +113,9 @@ namespace
                         .str = str
                     });
 
-                    last_token_type = byta::token_type::OPERAND;
                     offset += buffer_length;
                     buffer_length = 0;
                     real_number = false;
-                }
-
-                if (last_token_type == byta::token_type::OPERAND)
-                {
-                    developed.push_back({
-                        .type = byta::token_type::BINARY_OPERATOR,
-                        .str = "*"sv
-                    });
                 }
 
                 developed.push_back({
@@ -140,7 +123,6 @@ namespace
                     .str = {&(*(expr.begin() + offset)), 1}
                 });
 
-                last_token_type = byta::token_type::OPERAND;
                 offset++;
             }
             else
@@ -151,14 +133,6 @@ namespace
 
         if (buffer_length > 0)
         {
-            if (last_token_type == byta::token_type::OPERAND)
-            {
-                developed.push_back({
-                    .type = byta::token_type::BINARY_OPERATOR,
-                    .str = "*"sv
-                });
-            }
-
             developed.push_back({
                 .type = byta::token_type::OPERAND,
                 .str = {&(*(expr.begin() + offset)), buffer_length}
@@ -166,6 +140,38 @@ namespace
         }
 
         return developed;
+    }
+
+    void post_process_tokens(std::vector<byta::token_t>& tokens)
+    {
+        using std::operator""sv;
+        std::vector<byta::token_t> processed;
+
+        for (auto it = tokens.begin(); it != tokens.end(); ++it)
+        {
+            auto next = std::next(it);
+
+            // Insert * between 2 consecutive operands or closing parenthesis
+            // and operand
+            if ((it->type == byta::token_type::OPERAND ||
+                 it->type == byta::token_type::CLOSE_PARENTHESIS) &&
+                (next != tokens.end() &&
+                 next->type == byta::token_type::OPERAND)
+                )
+            {
+                processed.push_back(*it);
+                processed.push_back({
+                    .type = byta::token_type::BINARY_OPERATOR,
+                    .str = "*"sv
+                        });
+            }
+            else
+            {
+                processed.push_back(*it);
+            }
+        }
+
+        tokens = processed;
     }
 }
 
@@ -199,6 +205,8 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
         it = next_it;
         last_token_type = type;
     }
+
+    post_process_tokens(tokens);
 
     // tokens.push_back({.type = byta::token_type::END, .str = {}});
 

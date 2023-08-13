@@ -17,13 +17,13 @@ namespace byta
         OPERAND           = NAIL_BIT(1),
         UNARY_OPERATOR    = NAIL_BIT(2),
         BINARY_OPERATOR   = NAIL_BIT(3),
-        OPEN_PARENTHESES  = NAIL_BIT(4),
-        CLOSE_PARENTHESES = NAIL_BIT(5),
+        OPEN_PARENTHESIS  = NAIL_BIT(4),
+        CLOSE_PARENTHESIS = NAIL_BIT(5),
 
         END               = NAIL_BIT(7),
 
         OPERATOR          = (BINARY_OPERATOR | UNARY_OPERATOR),
-        PARENTHESES       = (OPEN_PARENTHESES | CLOSE_PARENTHESES),
+        PARENTHESIS       = (OPEN_PARENTHESIS | CLOSE_PARENTHESIS),
     };
 
     typedef struct token_t

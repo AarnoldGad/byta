@@ -35,9 +35,9 @@ void debug_print(std::vector<byta::token_t>& tokens)
                 type_str = "BINARY "; break;
             case byta::token_type::OPERAND:
                 type_str = "OPERAND"; break;
-            case byta::token_type::OPEN_PARENTHESES:
+            case byta::token_type::OPEN_PARENTHESIS:
                 type_str = "OPEN   "; break;
-            case byta::token_type::CLOSE_PARENTHESES:
+            case byta::token_type::CLOSE_PARENTHESIS:
                 type_str = "CLOSE  "; break;
             case byta::token_type::END:
                 type_str = "END    "; break;
