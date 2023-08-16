@@ -1,25 +1,40 @@
-// tokenise.hpp
-// 24 Jul 2023
+// token.hpp
+// 16 Jul 2023
 // Gaétan "Gad" Jalin
 // See end of file for complete license notice
-#ifndef BYTA_TOKENISE_HPP
-#define BYTA_TOKENISE_HPP
+#ifndef BYTA_TOKEN_HPP
+#define BYTA_TOKEN_HPP
 
-#include <vector>
-#include <string>
+#include <cstdint>
 #include <nail/nail.hpp>
 
 namespace byta
 {
-    struct token_t;
+    enum token_type : uint8_t
+    {
+        BEGIN             = NAIL_BIT(0),
 
-    using expression_t = nail::NamedType<std::string, struct ExpressionTag>;
+        OPERAND           = NAIL_BIT(1),
+        UNARY_OPERATOR    = NAIL_BIT(2),
+        BINARY_OPERATOR   = NAIL_BIT(3),
+        OPEN_PARENTHESIS  = NAIL_BIT(4),
+        CLOSE_PARENTHESIS = NAIL_BIT(5),
 
-    [[nodiscard]]
-    std::vector<byta::token_t> tokenise(byta::expression_t const& expr);
+        END               = NAIL_BIT(7),
+
+        OPERATOR          = (BINARY_OPERATOR | UNARY_OPERATOR),
+        PARENTHESIS       = (OPEN_PARENTHESIS | CLOSE_PARENTHESIS),
+    };
+
+    typedef struct token_t
+    {
+        token_type type;
+        // str points to original Expression
+        std::string_view str;
+    } token_t;
 }
 
-#endif // BYTA_TOKENISE_HPP
+#endif // BYTA_TOKEN_HPP
 /**
  * Copyright (C) 2023 Gaétan Jalin
  *

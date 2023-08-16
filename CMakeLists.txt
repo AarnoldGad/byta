@@ -54,6 +54,7 @@ TARGET_INCLUDE_DIRECTORIES(byta SYSTEM PRIVATE
     $<$<PLATFORM_ID:Linux,Darwin>:/usr/local/include>)
 
 TARGET_SOURCES(byta PRIVATE
+    ${SRC_DIR}/byta/traits.cpp
     ${SRC_DIR}/byta/tokenise.cpp
 
     ${SRC_DIR}/byta/main.cpp)

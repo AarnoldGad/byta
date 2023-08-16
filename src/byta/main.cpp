@@ -2,22 +2,12 @@
 // 19 Jul 2023
 // Gaétan "Gad" Jalin
 // See end of file for complete license notice
-#include <algorithm>
 #include <fmt/format.h>
 #include <nail/nail.hpp>
 
 #include "byta/tokenise.hpp"
-
-std::string preprocess_expression(std::string expr)
-{
-    expr.erase(std::remove_if(expr.begin(), expr.end(), 
-        [](char const& c) -> bool
-        {
-            return c == ' ' || c == '\'' || c == '\"';
-        }), expr.end());
-
-    return expr;
-}
+#include "byta/traits.hpp"
+#include "byta/token.hpp"
 
 void debug_print(std::vector<byta::token_t>& tokens)
 {
@@ -49,13 +39,13 @@ void debug_print(std::vector<byta::token_t>& tokens)
     }
 }
 
-int main(int argc, char* argv[])
+int main(int const argc, char const* const argv[])
 {
     // Parse arguments
     if (argc <= 1)
         return 0;
 
-    byta::expression_t const expr(preprocess_expression(argv[1]));
+    byta::expression_t const expr(argv[1]);
 
     // Validate input
     std::vector<byta::token_t> tokens = byta::tokenise(expr);

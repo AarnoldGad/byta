@@ -7,51 +7,20 @@
 #include <cctype>
 #include <string_view>
 
+#include "byta/traits.hpp"
+#include "byta/token.hpp"
+
 // TODO: implement ** and Ex (=10^x) operators
 namespace
 {
-    bool is_operator_char(char const c)
-    {
-        return (c == '+' ||
-                c == '-' ||
-                c == '*' ||
-                c == '/' ||
-                c == '^');
-    }
-
-    bool is_parentheses(char const c)
-    {
-        return (c == '(' || c == ')');
-    }
-
-    bool is_binary_op(std::string_view const token, byta::token_type const preceding_token_type)
-    {
-        using std::operator""sv;
-        return (preceding_token_type == byta::token_type::OPERAND ||
-                preceding_token_type == byta::token_type::CLOSE_PARENTHESIS) &&
-               (token == "+"sv ||
-                token == "-"sv ||
-                token == "*"sv ||
-                token == "/"sv ||
-                token == "^"sv);
-    }
-
-    bool is_unary_op(std::string_view const token, byta::token_type const preceding_token_type)
-    {
-        using std::operator""sv;
-        return (preceding_token_type == byta::token_type::BEGIN ||
-                (preceding_token_type & byta::token_type::PARENTHESIS) ||
-                (preceding_token_type & byta::token_type::OPERATOR)) &&
-               token == "-"sv;
-    }
-
     std::string::const_iterator seek_next_token(byta::expression_t const& expr, std::string::const_iterator const it)
     {
         NAIL_DEBUG_ASSERT(it < expr->end(), "Past-the-end input iterator!");
+
         for (size_t offset = 0; (it + offset) != expr->end(); ++offset)
         {
             char c = *(it + offset);
-            if (is_operator_char(c) || is_parentheses(c))
+            if (byta::is_operator(c) || byta::is_parenthesis(c))
                 return it + (offset ? offset : 1);
         }
 
@@ -62,9 +31,9 @@ namespace
     {
         using std::operator""sv;
 
-        if (is_unary_op(token, preceding_token_type))
+        if (byta::is_unary_op(token, preceding_token_type))
             return byta::token_type::UNARY_OPERATOR;
-        else if (is_binary_op(token, preceding_token_type))
+        else if (byta::is_binary_op(token, preceding_token_type))
             return byta::token_type::BINARY_OPERATOR;
         else if (token == "("sv)
             return byta::token_type::OPEN_PARENTHESIS;
@@ -82,16 +51,6 @@ namespace
         std::size_t offset = 0;
         std::size_t buffer_length = 0;
         bool real_number = false;
-
-        auto is_digit = [](unsigned char const c) -> bool
-        {
-            return std::isdigit(c);
-        };
-
-        auto is_alpha = [](unsigned char const c) -> bool
-        {
-            return std::isalpha(c);
-        };
 
         auto push_operand = [&developed](std::string_view const& token) -> void
         {
@@ -114,7 +73,7 @@ namespace
         for (char c : expr)
         {
             // TODO: Parse from defined variables
-            if (is_digit(c))
+            if (byta::is_digit(c))
             {
                 // Continue parsing a multidigit number
                 buffer_length++;
@@ -129,7 +88,7 @@ namespace
 
                 buffer_length++;
             }
-            else if (is_alpha(c))
+            else if (byta::is_alpha(c))
             {
                 // If was already parsing a number
                 if (buffer_length > 0)
