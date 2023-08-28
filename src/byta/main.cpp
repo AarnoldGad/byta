@@ -47,13 +47,9 @@ int main(int const argc, char const* const argv[])
 
     byta::expression_t const expr(argv[1]);
 
-    // Validate input
+    // Tokenise expression
     std::vector<byta::token_t> tokens = byta::tokenise(expr);
     debug_print(tokens);
-
-    // Interpret input
-
-    // Simplify results
 
     return 0;
 }

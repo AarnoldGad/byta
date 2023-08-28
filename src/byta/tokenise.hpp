@@ -11,9 +11,8 @@
 
 namespace byta
 {
-    struct token_t;
-
     using expression_t = nail::NamedType<std::string, struct ExpressionTag>;
+    struct token_t;
 
     [[nodiscard]]
     std::vector<byta::token_t> tokenise(byta::expression_t const& expr);

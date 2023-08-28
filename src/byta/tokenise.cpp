@@ -43,14 +43,13 @@ namespace
             return byta::token_type::OPERAND;
     }
 
-    std::vector<byta::token_t> develop_operand(std::string_view const expr)
+    std::vector<byta::token_t> split_operand(std::string_view const expr)
     {
         using std::operator""sv;
 
         std::vector<byta::token_t> developed;
         std::size_t offset = 0;
         std::size_t buffer_length = 0;
-        bool real_number = false;
 
         auto push_operand = [&developed](std::string_view const& token) -> void
         {
@@ -60,47 +59,34 @@ namespace
             });
         };
 
-        auto push_buffered_number = [&expr, &push_operand, &offset, &buffer_length]() -> void
+        auto push_buffered_number = [&push_operand, &expr, &offset, &buffer_length]() -> void
         {
-            std::string_view token(&(*(expr.begin() + offset)), buffer_length);
+            push_operand({&(*(expr.begin() + offset)), buffer_length});
 
-            if (token.back() == '.')
-                throw std::runtime_error("Real number with no decimals!");
-
-            push_operand(token);
+            offset += buffer_length;
+            buffer_length = 0;
         };
 
-        for (char c : expr)
+        auto push_last_char = [&push_operand, &expr, &offset]() -> void
+        {
+            push_operand({&(*(expr.begin() + offset)), 1});
+        };
+
+        for (char const c : expr)
         {
             // TODO: Parse from defined variables
-            if (byta::is_digit(c))
+            if (byta::is_digit(c) || c == '.')
             {
-                // Continue parsing a multidigit number
-                buffer_length++;
-            }
-            else if (c == '.')
-            {
-                // If parsing a number and first period encountered
-                if (!real_number && buffer_length > 0)
-                    real_number = true;
-                else
-                    throw std::runtime_error("Unexpected symbol");
-
+                // Continue parsing a number
                 buffer_length++;
             }
             else if (byta::is_alpha(c))
             {
                 // If was already parsing a number
                 if (buffer_length > 0)
-                {
                     push_buffered_number();
 
-                    offset += buffer_length;
-                    buffer_length = 0;
-                    real_number = false;
-                }
-
-                push_operand({&(*(expr.begin() + offset)), 1});
+                push_last_char();
 
                 offset++;
             }
@@ -110,13 +96,15 @@ namespace
             }
         }
 
+        // Push last buffered number if any
         if (buffer_length > 0)
             push_buffered_number();
 
         return developed;
     }
 
-    void post_process_tokens(std::vector<byta::token_t>& tokens)
+    [[nodiscard]]
+    std::vector<byta::token_t> post_process_tokens(std::vector<byta::token_t> const& tokens)
     {
         using std::operator""sv;
         std::vector<byta::token_t> processed;
@@ -125,20 +113,20 @@ namespace
         {
             auto next = std::next(it);
 
+            // Guards last token
             if (next == tokens.end())
             {
                 processed.push_back(*it);
-                continue;
+                break;
             }
-
-            // Insert * between 2 consecutive operands, closing parenthesis
-            // and operand or operand and opening parenthesis
-            if ((it->type == byta::token_type::OPERAND &&
-                 (next->type == byta::token_type::OPERAND ||
-                  next->type == byta::token_type::OPEN_PARENTHESIS)) ||
-                (it->type == byta::token_type::CLOSE_PARENTHESIS &&
-                 next->type == byta::token_type::OPERAND)
-               )
+            // Insert * between 2 operands, closing parenthesis and operand
+            // or operand and opening parenthesis
+            else if ((it->type == byta::token_type::OPERAND &&
+                      (next->type == byta::token_type::OPERAND ||
+                       next->type == byta::token_type::OPEN_PARENTHESIS)) ||
+                     (it->type == byta::token_type::CLOSE_PARENTHESIS &&
+                      next->type == byta::token_type::OPERAND)
+                    )
             {
                 processed.push_back(*it);
                 processed.push_back({
@@ -152,7 +140,7 @@ namespace
             }
         }
 
-        tokens = processed;
+        return processed;
     }
 }
 
@@ -164,18 +152,18 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
     byta::token_type last_token_type = byta::token_type::BEGIN;
     std::string::const_iterator it = expr->begin();
 
-    // tokens.push_back({.type = byta::token_type::BEGIN, .str = {}});
-
     while(it != expr->end())
     {
         std::string::const_iterator next_it = seek_next_token(expr, it);
+
+        // Extract one token
         std::string_view token(&(*it), std::distance(it, next_it));
         byta::token_type type = detect_token_type(token, last_token_type);
 
         if (type == byta::token_type::OPERAND)
         {
-            std::vector<byta::token_t> developed = develop_operand(token);
-            tokens.insert(tokens.end(), developed.begin(), developed.end());
+            std::vector<byta::token_t> operands = split_operand(token);
+            tokens.insert(tokens.end(), operands.begin(), operands.end());
         }
         else
         {
@@ -187,9 +175,7 @@ std::vector<byta::token_t> byta::tokenise(byta::expression_t const& expr)
         last_token_type = type;
     }
 
-    post_process_tokens(tokens);
-
-    // tokens.push_back({.type = byta::token_type::END, .str = {}});
+    tokens = post_process_tokens(tokens);
 
     return tokens;
 }
